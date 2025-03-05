@@ -21,7 +21,7 @@ def predict_audio(file_path):
         print(f"Error: {e}")
         return None, None
 
-@app.route("/", methods=['POST'])
+@app.route("/", methods=['GET'])
 def predict():
     if 'audio' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
