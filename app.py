@@ -1,7 +1,7 @@
-from flask import Flask, request, render_template_string, jsonify
-import requests
+from flask import Flask, request, render_template_string
 import os
 from werkzeug.utils import secure_filename
+from gradio_client import Client, handle_file
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = "uploads"
@@ -33,26 +33,26 @@ RESULTS_HTML = """
 </head>
 <body>
     <h1>Prediction Result</h1>
-    <p>{{ output_text }}</p>
+    <p>Predicted Age: {{ age }}</p>
+    <p>Predicted Gender: {{ gender }}</p>
     <a href="/">Go Back</a>
 </body>
 </html>
 """
 
+# Initialize Gradio Client
+client = Client("tdnathmlenthusiast/gender_age_prediction")
+
 def predict_audio(file_path):
     try:
-        with open(file_path, "rb") as f:
-            files = {"audio": f}
-            response = requests.post(
-                "https://tdnathmlenthusiast-gender-age-prediction.hf.space/gradio_api/call/predict",
-                files=files
-            )
-        response.raise_for_status()
-        data = response.json().get("data", [])
-        return data
-    except requests.exceptions.RequestException as e:
+        result = client.predict(
+            audio_path=handle_file(file_path),
+            api_name="/predict"
+        )
+        return result  # Returns tuple (age, gender)
+    except Exception as e:
         print(f"Error: {e}")
-        return []
+        return None, None
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -67,17 +67,13 @@ def index():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(audio_file.filename))
         audio_file.save(file_path)
         
-        prediction_data = predict_audio(file_path)
+        age, gender = predict_audio(file_path)
         os.remove(file_path)  # Clean up the uploaded file
         
-        if not prediction_data:
+        if not age or not gender:
             return render_template_string(INDEX_HTML, error="Prediction failed")
         
-        confidence_list = prediction_data[0].get('confidences', [])
-        labels = [elem['label'] for elem in confidence_list if elem.get('confidence')]
-        label_text = ", ".join(labels)
-        
-        return render_template_string(RESULTS_HTML, output_text=label_text)
+        return render_template_string(RESULTS_HTML, age=age, gender=gender)
     
     return render_template_string(INDEX_HTML)
 
