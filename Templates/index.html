@@ -1,0 +1,18 @@
+# Template files:
+# index.html
+index_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Prediction</title>
+</head>
+<body>
+    <h1>Upload an Audio File</h1>
+    {% if error %}<p style='color:red;'>{{ error }}</p>{% endif %}
+    <form action="/" method="post" enctype="multipart/form-data">
+        <input type="file" name="audio" required>
+        <button type="submit">Upload</button>
+    </form>
+</body>
+</html>
+"""
