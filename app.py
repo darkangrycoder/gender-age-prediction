@@ -21,20 +21,29 @@ def predict_audio(file_path):
         print(f"Error: {e}")
         return None, None
 
-@app.route("/", methods=['GET'])
+@app.route("/", methods=['POST'])
 def predict():
-    if 'audio' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-    
-    audio_file = request.files['audio']
-    if audio_file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
-    
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(audio_file.filename))
-    audio_file.save(file_path)
+    if request.content_type == 'application/json':
+        data = request.get_json()
+        if not data or 'audio_path' not in data:
+            return jsonify({"error": "No audio file path provided"}), 400
+        
+        file_path = data['audio_path']
+    else:
+        if 'audio' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+        
+        audio_file = request.files['audio']
+        if audio_file.filename == "":
+            return jsonify({"error": "No selected file"}), 400
+        
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(audio_file.filename))
+        audio_file.save(file_path)
     
     age, gender = predict_audio(file_path)
-    os.remove(file_path)  # Clean up the uploaded file
+    
+    if os.path.exists(file_path):
+        os.remove(file_path)  # Clean up the uploaded file
     
     if not age or not gender:
         return jsonify({"error": "Prediction failed"}), 500
@@ -43,7 +52,7 @@ def predict():
 
 @app.route("/", methods=['GET'])
 def info():
-    return jsonify({"message": "Send a POST request with an audio file to get predictions."})
+    return jsonify({"message": "Send a POST request with an audio file or JSON payload containing 'audio_path' to get predictions."})
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)), debug=True)
