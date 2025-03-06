@@ -24,7 +24,7 @@ def predict_audio(file_path):
 def index():
     return jsonify({"message": "Audio prediction API is running"})
 
-@app.route("/predict", methods=['GET'])
+@app.route("/predict", methods=['POST'])
 def predict():
     if 'audio' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
