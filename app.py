@@ -24,15 +24,17 @@ def predict_audio(file_path):
 def index():
     return jsonify({"message": "Audio prediction API is running"})
 
-@app.route("/predict", methods=['GET'])
+@app.route("/predict", methods=['POST'])
 def predict():
-    file_name = request.args.get("file")
-    if not file_name:
-        return jsonify({"error": "No file provided"}), 400
+    if 'audio' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
     
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file_name))
-    if not os.path.exists(file_path):
-        return jsonify({"error": "File not found"}), 404
+    audio_file = request.files['audio']
+    if audio_file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+    
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(audio_file.filename))
+    audio_file.save(file_path)
     
     prediction = predict_audio(file_path)
     os.remove(file_path)  # Clean up the uploaded file
